@@ -1,0 +1,47 @@
+{
+  "name": "uk-rope",
+  "version": "1.0.0",
+  "description": "The component is used to rope DOM element(s).",
+  "main": "./dist/build.js",
+  "scripts": {
+    "test": "npm run build && npm run dev",
+    "dev": "webpack-dev-server --config webpack.test.js --open --hot",
+    "build": "webpack --config webpack.prod.js --progress --hide-modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vue-kit/uk-rope.git"
+  },
+  "keywords": [
+    "rope",
+    "DOM",
+    "vue"
+  ],
+  "author": "lixucheng (lixucheng@aliyun.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vue-kit/uk-rope/issues"
+  },
+  "homepage": "https://github.com/vue-kit/uk-rope#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.6.0",
+    "clean-webpack-plugin": "^0.1.16",
+    "css-loader": "^0.28.4",
+    "jquery": "^3.2.1",
+    "less": "^2.7.2",
+    "less-loader": "^4.0.5",
+    "pug": "^2.0.0-rc.3",
+    "style-loader": "^0.18.2",
+    "uikit": "^3.0.0-beta.28",
+    "vue-loader": "^13.0.4",
+    "vue-template-compiler": "^2.4.2",
+    "webpack": "^3.5.5",
+    "webpack-dev-server": "^2.7.1"
+  },
+  "dependencies": {
+    "vue": "^2.4.2"
+  }
+}
