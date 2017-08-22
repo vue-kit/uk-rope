@@ -3,6 +3,15 @@
         svg(:width="width" :height="height" :viewBox="box")
             path(:d="path" :stroke="color" :stroke-width="borderWidth"
                 :stroke-dasharray="dash" fill="none")
+            rect(v-for="border of borders"
+                :name="border.name"
+                :x="border.x" :y="border.y"
+                :width="border.width" :height="border.height"
+                fill="none"
+                @mouseenter.stop.prevent="showHandle"
+                @mousemove.stop.prevent="moveHandle"
+                @mouseleave.stop.prevent="hideHandle")
+            circle(v-if="handleShow" :cx="cx" :cy="cy" :r="gap / 2" :fill="color")
 </template>
 <script>
     export default {
@@ -54,7 +63,10 @@
         data() {
             return {
                 top: 0,
-                left: 0
+                left: 0,
+                handleShow: false,
+                cx: -parseInt(this.padding),
+                cy: -parseInt(this.padding)
             }
         },
         computed: {
@@ -128,10 +140,11 @@
             },
             path() {
                 let offset = this.gap / 2 - this.borderWidth / 2;
-                return "M" + offset + " " + offset +
-                        " L" + (this.width - offset) + " " + offset +
-                        " L" + (this.width - offset) + " " + (this.height - offset) +
-                        " L" + offset + " " + (this.height - offset) + "Z";
+                let lt = offset + " " + offset;
+                let rt = (this.width - offset) + " " + offset;
+                let lb = offset + " " + (this.height - offset);
+                let rb = (this.width - offset) + " " + (this.height - offset);
+                return "M" + lt + " L" + rt + " L" + rb + " L" + lb + "Z";
             },
             color() {
                 let c = this.strokeColor;
@@ -152,6 +165,82 @@
                 } else {
                     return false;
                 }
+            },
+            borders() {
+                let rightX = this.width - this.gap;
+                let bottomY = this.height - this.gap;
+                let middleWidth = this.width - this.gap * 2;
+                let middleHeight = this.height - this.gap * 2;
+                return [
+                    { name: "lt", x: 0, y: 0, width: this.gap, height: this.gap },
+                    { name: "t", x: this.gap, y: 0, width: middleWidth, height: this.gap },
+                    { name: "rt", x: rightX, y: 0, width: this.gap, height: this.gap },
+                    { name: "l", x: 0, y: this.gap, width: this.gap, height: middleHeight },
+                    { name: "r", x: rightX, y: this.gap, width: this.gap, height: middleHeight },
+                    { name: "lb", x: 0, y: bottomY, width: this.gap, height: this.gap },
+                    { name: "b", x: this.gap, y: bottomY, width: middleWidth, height: this.gap },
+                    { name: "rb", x: rightX, y: bottomY, width: this.gap, height: this.gap }
+                ]
+            }
+        },
+        methods: {
+            showHandle(evt) {
+                this.handleShow = true;
+                switch (evt.target.getAttribute("name")) {
+                    case "lt":
+                        this.cx = this.gap / 2;
+                        this.cy = this.gap / 2;
+                        break;
+                    case "t":
+                        this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                        this.cy = this.gap / 2;
+                        break;
+                    case "rt":
+                        this.cx = this.width - this.gap / 2;
+                        this.cy = this.gap / 2;
+                        break;
+                    case "l":
+                        this.cx = this.gap / 2;
+                        this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
+                        break;
+                    case "r":
+                        this.cx = this.width - this.gap / 2;
+                        this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
+                        break;
+                    case "lb":
+                        this.cx = this.gap / 2;
+                        this.cy = this.height - this.gap / 2;
+                        break;
+                    case "b":
+                        this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                        this.cy = this.height - this.gap / 2;
+                        break;
+                    case "rb":
+                        this.cx = this.width - this.gap / 2;
+                        this.cy = this.height - this.gap / 2;
+                        break;
+                }
+            },
+            moveHandle(evt) {
+                switch (evt.target.getAttribute("name")) {
+                    case "t":
+                    case "b":
+                        let offsetX = this.cx + evt.movementX;
+                        if (offsetX >= this.gap / 2 && offsetX <= this.width - this.gap / 2) {
+                            this.cx = offsetX;
+                        }
+                        break;
+                    case "l":
+                    case "r":
+                        let offsetY = this.cy + evt.movementY;
+                        if (offsetY >= this.gap / 2 && offsetY <= this.height - this.gap / 2) {
+                            this.cy = offsetY;
+                        }
+                        break;
+                }
+            },
+            hideHandle(evt) {
+                this.handleShow = false;
             }
         },
         mounted() {
@@ -170,5 +259,9 @@
 <style lang="less" scoped>
     .uk-rope {
         position: absolute;
+        pointer-events: none;
+        rect {
+            pointer-events: all;
+        }
     }
 </style>
