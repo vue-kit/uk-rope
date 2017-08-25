@@ -8,10 +8,14 @@
                 :x="border.x" :y="border.y"
                 :width="border.width" :height="border.height"
                 fill="none"
-                @mouseenter.stop.prevent="showHandle"
+                @mouseenter.stop.prevent="addHandle"
                 @mousemove.stop.prevent="moveHandle"
-                @mouseleave.stop.prevent="hideHandle")
-            circle(v-if="handleShow" :cx="cx" :cy="cy" :r="gap / 2" :fill="color")
+                @mousedown.stop.prevent="fixHandle"
+                @mouseleave.stop.prevent="removeHandle")
+            circle(v-for="handle of handles"
+                  :cx="handle.cx" :cy="handle.cy"
+                  :r="gap / 2" :fill="color"
+                  @mousedown.stop.prevent="handleDragStart")
 </template>
 <script>
     export default {
@@ -64,9 +68,8 @@
             return {
                 top: 0,
                 left: 0,
-                handleShow: false,
-                cx: -parseInt(this.padding),
-                cy: -parseInt(this.padding)
+                handles: [],
+                handleFixed: false
             }
         },
         computed: {
@@ -181,66 +184,100 @@
                     { name: "b", x: this.gap, y: bottomY, width: middleWidth, height: this.gap },
                     { name: "rb", x: rightX, y: bottomY, width: this.gap, height: this.gap }
                 ]
+            },
+            latestHandle() {
+                return this.handles[this.handles.length - 1];
             }
         },
         methods: {
-            showHandle(evt) {
-                this.handleShow = true;
-                switch (evt.target.getAttribute("name")) {
-                    case "lt":
-                        this.cx = this.gap / 2;
-                        this.cy = this.gap / 2;
-                        break;
-                    case "t":
-                        this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
-                        this.cy = this.gap / 2;
-                        break;
-                    case "rt":
-                        this.cx = this.width - this.gap / 2;
-                        this.cy = this.gap / 2;
-                        break;
-                    case "l":
-                        this.cx = this.gap / 2;
-                        this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
-                        break;
-                    case "r":
-                        this.cx = this.width - this.gap / 2;
-                        this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
-                        break;
-                    case "lb":
-                        this.cx = this.gap / 2;
-                        this.cy = this.height - this.gap / 2;
-                        break;
-                    case "b":
-                        this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
-                        this.cy = this.height - this.gap / 2;
-                        break;
-                    case "rb":
-                        this.cx = this.width - this.gap / 2;
-                        this.cy = this.height - this.gap / 2;
-                        break;
+            addHandle(evt) {
+                if (!this.handleFixed) {
+                    switch (evt.target.getAttribute("name")) {
+                        case "lt":
+                            this.handles.push({
+                                cx: this.gap / 2,
+                                cy: this.gap / 2
+                            });
+                            break;
+                        case "t":
+                            this.handles.push({
+                                cx: evt.clientX - this.$el.getBoundingClientRect().left,
+                                cy: this.gap / 2
+                            });
+                            break;
+                        case "rt":
+                            this.handles.push({
+                                cx: this.width - this.gap / 2,
+                                cy: this.gap / 2
+                            });
+                            break;
+                        case "l":
+                            this.handles.push({
+                                cx: this.gap / 2,
+                                cy: evt.clientY - this.$el.getBoundingClientRect().top
+                            });
+                            break;
+                        case "r":
+                            this.handles.push({
+                                cx: this.width - this.gap / 2,
+                                cy: evt.clientY - this.$el.getBoundingClientRect().top
+                            });
+                            break;
+                        case "lb":
+                            this.handles.push({
+                                cx: this.gap / 2,
+                                cy: this.height - this.gap / 2
+                            });
+                            break;
+                        case "b":
+                            this.handles.push({
+                                cx: evt.clientX - this.$el.getBoundingClientRect().left,
+                                cy: this.height - this.gap / 2
+                            });
+                            break;
+                        case "rb":
+                            this.handles.push({
+                                cx: this.width - this.gap / 2,
+                                cy: this.height - this.gap / 2
+                            });
+                            break;
+                    }
                 }
             },
             moveHandle(evt) {
-                switch (evt.target.getAttribute("name")) {
-                    case "t":
-                    case "b":
-                        let offsetX = this.cx + evt.movementX;
-                        if (offsetX >= this.gap / 2 && offsetX <= this.width - this.gap / 2) {
-                            this.cx = offsetX;
-                        }
-                        break;
-                    case "l":
-                    case "r":
-                        let offsetY = this.cy + evt.movementY;
-                        if (offsetY >= this.gap / 2 && offsetY <= this.height - this.gap / 2) {
-                            this.cy = offsetY;
-                        }
-                        break;
+                if (!this.handleFixed) {
+                    switch (evt.target.getAttribute("name")) {
+                        case "t":
+                        case "b":
+                            let offsetX = this.latestHandle.cx + evt.movementX;
+                            if (offsetX >= this.gap / 2 && offsetX <= this.width - this.gap / 2) {
+                                this.latestHandle.cx = offsetX;
+                            }
+                            break;
+                        case "l":
+                        case "r":
+                            let offsetY = this.latestHandle.cy + evt.movementY;
+                            if (offsetY >= this.gap / 2 && offsetY <= this.height - this.gap / 2) {
+                                this.latestHandle.cy = offsetY;
+                            }
+                            break;
+                    }
                 }
             },
-            hideHandle(evt) {
-                this.handleShow = false;
+            fixHandle(evt) {
+                this.handleFixed = true;
+                document.documentElement.addEventListener("mouseup", this.looseHandle, true);
+                this.$emit("fix-handle", this.latestHandle.cx + this.left, this.latestHandle.cy + this.top);
+            },
+            looseHandle(evt) {
+                this.handleFixed = false;
+                document.documentElement.removeEventListener("mouseup", this.looseHandle, true);
+            },
+            removeHandle(evt) {
+                if (!this.handleFixed) this.handles.pop();
+            },
+            handleDragStart(evt) {
+
             }
         },
         mounted() {
