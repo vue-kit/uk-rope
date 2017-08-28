@@ -8,13 +8,15 @@
                 :x="border.x" :y="border.y"
                 :width="border.width" :height="border.height"
                 fill="none"
-                @mouseenter.stop.prevent="addHandle"
+                @mouseenter.stop.prevent="showHandle"
                 @mousemove.stop.prevent="moveHandle"
                 @mousedown.stop.prevent="fixHandle"
-                @mouseleave.stop.prevent="removeHandle")
-            circle(v-for="handle of handles"
-                  :cx="handle.cx" :cy="handle.cy"
-                  :r="gap / 2" :fill="color"
+                @mouseleave.stop.prevent="hideHandle")
+            circle(v-if="handleShow" :cx="this.cx" :cy="this.cy" :r="gap / 2"
+                   :fill="color" :pos="this.pos")
+            circle.fixed(v-for="(handle, index) of handles"
+                  :cx="handle.cx" :cy="handle.cy" :r="gap / 2"
+                  :fill="color" :pos="handle.pos" :index="index"
                   @mousedown.stop.prevent="handleDragStart")
 </template>
 <script>
@@ -68,8 +70,14 @@
             return {
                 top: 0,
                 left: 0,
+                handleShow: false,
+                cx: -this.gap,
+                cy: -this.gap,
+                pos: "",
                 handles: [],
-                handleFixed: false
+                handleFixed: false,
+                handleDragged: false,
+                handle: null
             }
         },
         computed: {
@@ -184,100 +192,140 @@
                     { name: "b", x: this.gap, y: bottomY, width: middleWidth, height: this.gap },
                     { name: "rb", x: rightX, y: bottomY, width: this.gap, height: this.gap }
                 ]
-            },
-            latestHandle() {
-                return this.handles[this.handles.length - 1];
             }
         },
         methods: {
-            addHandle(evt) {
-                if (!this.handleFixed) {
-                    switch (evt.target.getAttribute("name")) {
-                        case "lt":
-                            this.handles.push({
-                                cx: this.gap / 2,
-                                cy: this.gap / 2
-                            });
-                            break;
-                        case "t":
-                            this.handles.push({
-                                cx: evt.clientX - this.$el.getBoundingClientRect().left,
-                                cy: this.gap / 2
-                            });
-                            break;
-                        case "rt":
-                            this.handles.push({
-                                cx: this.width - this.gap / 2,
-                                cy: this.gap / 2
-                            });
-                            break;
-                        case "l":
-                            this.handles.push({
-                                cx: this.gap / 2,
-                                cy: evt.clientY - this.$el.getBoundingClientRect().top
-                            });
-                            break;
-                        case "r":
-                            this.handles.push({
-                                cx: this.width - this.gap / 2,
-                                cy: evt.clientY - this.$el.getBoundingClientRect().top
-                            });
-                            break;
-                        case "lb":
-                            this.handles.push({
-                                cx: this.gap / 2,
-                                cy: this.height - this.gap / 2
-                            });
-                            break;
-                        case "b":
-                            this.handles.push({
-                                cx: evt.clientX - this.$el.getBoundingClientRect().left,
-                                cy: this.height - this.gap / 2
-                            });
-                            break;
-                        case "rb":
-                            this.handles.push({
-                                cx: this.width - this.gap / 2,
-                                cy: this.height - this.gap / 2
-                            });
-                            break;
+            showHandle(evt) {
+                let cx, cy;
+                let pos = evt.target.getAttribute("name");
+                switch (pos) {
+                    case "lt":
+                        cx = this.gap / 2;
+                        cy = this.gap / 2;
+                        break;
+                    case "t":
+                        cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                        cy = this.gap / 2;
+                        break;
+                    case "rt":
+                        cx = this.width - this.gap / 2;
+                        cy = this.gap / 2;
+                        break;
+                    case "l":
+                        cx = this.gap / 2;
+                        cy = evt.clientY - this.$el.getBoundingClientRect().top;
+                        break;
+                    case "r":
+                        cx = this.width - this.gap / 2;
+                        cy = evt.clientY - this.$el.getBoundingClientRect().top;
+                        break;
+                    case "lb":
+                        cx = this.gap / 2;
+                        cy = this.height - this.gap / 2;
+                        break;
+                    case "b":
+                        cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                        cy = this.height - this.gap / 2;
+                        break;
+                    case "rb":
+                        cx = this.width - this.gap / 2;
+                        cy = this.height - this.gap / 2;
+                        break;
+                }
+                if (!this.handleDragged) {
+                    if (!this.handleFixed) {
+                        this.handleShow = true;
+                        this.cx = cx;
+                        this.cy = cy;
+                        this.pos = pos;
                     }
+                } else {
+                    this.handle.cx = cx;
+                    this.handle.cy = cy;
+                    this.handle.pos = pos;
                 }
             },
             moveHandle(evt) {
-                if (!this.handleFixed) {
+                if (!this.handleFixed && !this.handleDragged) {
                     switch (evt.target.getAttribute("name")) {
                         case "t":
+                            this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                            this.cy = this.gap / 2;
+                            break;
                         case "b":
-                            let offsetX = this.latestHandle.cx + evt.movementX;
-                            if (offsetX >= this.gap / 2 && offsetX <= this.width - this.gap / 2) {
-                                this.latestHandle.cx = offsetX;
-                            }
+                            this.cx = evt.clientX - this.$el.getBoundingClientRect().left;
+                            this.cy = this.height - this.gap / 2;
                             break;
                         case "l":
+                            this.cx = this.gap / 2;
+                            this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
+                            break;
                         case "r":
-                            let offsetY = this.latestHandle.cy + evt.movementY;
-                            if (offsetY >= this.gap / 2 && offsetY <= this.height - this.gap / 2) {
-                                this.latestHandle.cy = offsetY;
-                            }
+                            this.cx = this.width - this.gap / 2;
+                            this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
                             break;
                     }
                 }
             },
             fixHandle(evt) {
-                this.handleFixed = true;
-                document.documentElement.addEventListener("mouseup", this.looseHandle, true);
-                this.$emit("fix-handle", this.latestHandle.cx + this.left, this.latestHandle.cy + this.top);
+                if (!this.handleDragged) {
+                    this.handleFixed = true;
+                    document.documentElement.addEventListener("mouseup", this.looseHandle, true);
+                    this.$emit("fix-handle", this.cx + this.left, this.cy + this.top);
+                }
             },
             looseHandle(evt) {
-                this.handleFixed = false;
-                document.documentElement.removeEventListener("mouseup", this.looseHandle, true);
+                if (!this.handleDragged) {
+                    this.handleFixed = false;
+                    document.documentElement.removeEventListener("mouseup", this.looseHandle, true);
+                    this.handles.push({
+                        cx: this.cx,
+                        cy: this.cy,
+                        pos: this.pos
+                    });
+                }
             },
-            removeHandle(evt) {
-                if (!this.handleFixed) this.handles.pop();
+            hideHandle(evt) {
+                if (!this.handleFixed && !this.handleDragged) this.handleShow = false;
             },
             handleDragStart(evt) {
-
+                this.handleDragged = true;
+                document.documentElement.style.cursor = "move";
+                document.documentElement.addEventListener("mousemove", this.handleDrag, true);
+                document.documentElement.addEventListener("mouseup", this.handleDragEnd, true);
+                this.handle = this.handles[evt.target.getAttribute("index")];
+            },
+            handleDrag(evt) {
+                if (this.handle) {
+                    switch(this.handle.pos) {
+                        case "lt":
+                        case "t":
+                        case "rt":
+                        case "lb":
+                        case "b":
+                        case "rb":
+                            let offsetX = this.handle.cx + evt.movementX;
+                            if (offsetX >= this.gap / 2 && offsetX <= this.width - this.gap / 2) {
+                                this.handle.cx = offsetX;
+                            }
+                            break;
+                        case "l":
+                        case "r":
+                            let offsetY = this.handle.cy + evt.movementY;
+                            if (offsetY >= this.gap / 2 && offsetY <= this.height - this.gap / 2) {
+                                this.handle.cy = offsetY;
+                            }
+                            break;
+                    }
+                    this.$emit("drag-handle", this.handle.cx + this.left, this.handle.cy + this.top);
+                }
+            },
+            handleDragEnd(evt) {
+                this.handleDragged = false;
+                document.documentElement.removeEventListener("mousemove", this.handleDrag, true);
+                document.documentElement.removeEventListener("mouseup", this.handleDragEnd, true);
+                document.documentElement.style.cursor = "auto";
+                this.handle = null;
             }
         },
         mounted() {
@@ -299,6 +347,10 @@
         pointer-events: none;
         rect {
             pointer-events: all;
+        }
+        .fixed {
+            pointer-events: all;
+            cursor: move;
         }
     }
 </style>
