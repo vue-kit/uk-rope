@@ -270,19 +270,25 @@
             fixHandle(evt) {
                 if (!this.handleDragged) {
                     this.handleFixed = true;
+                    document.documentElement.addEventListener("mousemove", this.pullHandle, true);
                     document.documentElement.addEventListener("mouseup", this.looseHandle, true);
                     this.$emit("fix-handle", this.cx + this.left, this.cy + this.top);
                 }
             },
+            pullHandle(evt) {
+                this.$emit("pull-handle", evt.movementX, evt.movementY);
+            },
             looseHandle(evt) {
                 if (!this.handleDragged) {
                     this.handleFixed = false;
+                    document.documentElement.removeEventListener("mousemove", this.pullHandle, true);
                     document.documentElement.removeEventListener("mouseup", this.looseHandle, true);
                     this.handles.push({
                         cx: this.cx,
                         cy: this.cy,
                         pos: this.pos
                     });
+                    this.$emit("loose-handle", this.handles.length - 1);
                 }
             },
             hideHandle(evt) {
@@ -293,7 +299,9 @@
                 document.documentElement.style.cursor = "move";
                 document.documentElement.addEventListener("mousemove", this.handleDrag, true);
                 document.documentElement.addEventListener("mouseup", this.handleDragEnd, true);
-                this.handle = this.handles[evt.target.getAttribute("index")];
+                let index = evt.target.getAttribute("index");
+                this.handle = this.handles[index];
+                this.$emit("drag-handle-start", index);
             },
             handleDrag(evt) {
                 if (this.handle) {

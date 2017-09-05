@@ -36,6 +36,7 @@
     "pug": "^2.0.0-rc.3",
     "style-loader": "^0.18.2",
     "uikit": "^3.0.0-beta.28",
+    "uk-line": "^1.0.1",
     "vue-loader": "^13.0.4",
     "vue-template-compiler": "^2.4.2",
     "webpack": "^3.5.5",

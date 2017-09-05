@@ -20,7 +20,14 @@
                         It is a secondary card.
                     </div>
                     <span class="uk-text-danger uk-position-center">It is sample text.</span>
-                    <uk-rope :target="['.uk-card', '.uk-text-danger']"></uk-rope>
+                    <uk-rope :target="['.uk-card-default']"
+                        @fix-handle="drawstart" @pull-handle="draw" @loose-handle="drawend"
+                        @drag-handle-start="dragstart" @drag-handle="drag">
+                    </uk-rope>
+                    <uk-rope :target="['.uk-text-danger']"
+                        @fix-handle="drawstart" @pull-handle="draw" @loose-handle="drawend"
+                        @drag-handle-start="dragstart" @drag-handle="drag">
+                    </uk-rope>
                 </div>
             </div>
         </div>
