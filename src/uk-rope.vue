@@ -15,7 +15,7 @@
             circle(v-if="handleShow" :cx="this.cx" :cy="this.cy" :r="gap / 2"
                    :fill="color" :pos="this.pos")
             circle.fixed(v-for="(handle, index) of handles"
-                  :cx="handle.cx" :cy="handle.cy" :r="gap / 2"
+                  :id="handle.id" :cx="handle.cx" :cy="handle.cy" :r="gap / 2"
                   :fill="color" :pos="handle.pos" :index="index"
                   @mousedown.stop.prevent="handleDragStart")
 </template>
@@ -238,6 +238,7 @@
                         this.cx = cx;
                         this.cy = cy;
                         this.pos = pos;
+                        this.$emit("show-handle", this.cx + this.left, this.cy + this.top);
                     }
                 } else {
                     this.handle.cx = cx;
@@ -265,6 +266,7 @@
                             this.cy = evt.clientY - this.$el.getBoundingClientRect().top;
                             break;
                     }
+                    this.$emit("move-handle", this.cx + this.left, this.cy + this.top);
                 }
             },
             fixHandle(evt) {
@@ -283,12 +285,14 @@
                     this.handleFixed = false;
                     document.documentElement.removeEventListener("mousemove", this.pullHandle, true);
                     document.documentElement.removeEventListener("mouseup", this.looseHandle, true);
+                    let id = Date.now();
                     this.handles.push({
+                        id: id,
                         cx: this.cx,
                         cy: this.cy,
                         pos: this.pos
                     });
-                    this.$emit("loose-handle", this.handles.length - 1);
+                    this.$emit("loose-handle", id);
                 }
             },
             hideHandle(evt) {
@@ -299,9 +303,8 @@
                 document.documentElement.style.cursor = "move";
                 document.documentElement.addEventListener("mousemove", this.handleDrag, true);
                 document.documentElement.addEventListener("mouseup", this.handleDragEnd, true);
-                let index = evt.target.getAttribute("index");
-                this.handle = this.handles[index];
-                this.$emit("drag-handle-start", index);
+                this.handle = this.handles[evt.target.getAttribute("index")];
+                this.$emit("drag-handle-start", this.handle.id);
             },
             handleDrag(evt) {
                 if (this.handle) {
